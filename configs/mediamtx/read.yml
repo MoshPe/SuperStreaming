@@ -2,30 +2,34 @@ logLevel: info
 logDestinations:
   - stdout
 
-api: yes
+api: true
 apiAddress: :9997
 
-metrics: yes
+metrics: true
 metricsAddress: :9998
 
-rtsp: no
+rtsp: false
 
-webrtc: yes
+webrtc: true
 webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
 webrtcLocalTCPAddress: :8189
 webrtcAdditionalHosts:
-  - ${WEBRTC_EXTERNAL_HOST}
+  - $WEBRTC_EXTERNAL_HOST
 
 authMethod: internal
 authInternalUsers:
+  - user: any
+    pass: ""
+    permissions:
+      - action: api
   - user: viewer
-    pass: ${VIEWER_SECRET}
+    pass: $VIEWER_SECRET
     permissions:
       - action: read
         path: ""
 
 paths:
   "~^(.+)$":
-    source: rtsp://internal:${INTERNAL_SECRET}@mediamtx-origin-0:8554/$G1
-    sourceOnDemand: no
+    source: rtsp://internal:$INTERNAL_SECRET@mediamtx-origin-0:8554/$G1
+    sourceOnDemand: true

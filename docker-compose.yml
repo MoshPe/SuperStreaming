@@ -1,0 +1,64 @@
+name: superstreaming
+
+networks:
+  superstreaming:
+    driver: bridge
+
+volumes:
+  origin-recordings:
+  minio-data:
+  postgres-data:
+  grafana-data:
+
+services:
+
+  # ── MediaMTX Origin ──────────────────────────────────────────────
+  mediamtx-origin-0:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx-origin-0
+    restart: unless-stopped
+    networks:
+      - superstreaming
+    ports:
+      - "8554:8554"        # RTSP publish
+      - "9997:9997"        # Control API (origin)
+    volumes:
+      - ./configs/mediamtx/origin.yml:/mediamtx.yml:ro
+      - origin-recordings:/recordings
+    environment:
+      - PUBLISH_SECRET=${PUBLISH_SECRET}
+      - INTERNAL_SECRET=${INTERNAL_SECRET}
+    healthcheck:
+      test: ["CMD", "/mediamtx", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ── MediaMTX Read Replica ─────────────────────────────────────────
+  mediamtx-read:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx-read
+    restart: unless-stopped
+    networks:
+      - superstreaming
+    ports:
+      - "8889:8889"        # WebRTC WHEP signaling (TCP)
+      - "8189:8189/udp"    # WebRTC media (UDP — happy path)
+      - "8189:8189/tcp"    # WebRTC media (TCP — fallback)
+      - "9998:9997"        # Control API (read, mapped to host 9998)
+    volumes:
+      - ./configs/mediamtx/read.yml:/mediamtx.yml:ro
+    environment:
+      - INTERNAL_SECRET=${INTERNAL_SECRET}
+      - VIEWER_SECRET=${VIEWER_SECRET}
+      - WEBRTC_EXTERNAL_HOST=${WEBRTC_EXTERNAL_HOST}
+    depends_on:
+      mediamtx-origin-0:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/mediamtx", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

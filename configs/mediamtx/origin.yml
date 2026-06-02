@@ -2,27 +2,31 @@ logLevel: info
 logDestinations:
   - stdout
 
-api: yes
+api: true
 apiAddress: :9997
 
-metrics: yes
+metrics: true
 metricsAddress: :9998
 
-rtsp: yes
+rtsp: true
 rtspAddress: :8554
-rtspEncryption: no
+rtspEncryption: "no"
 
-webrtc: no
+webrtc: false
 
 authMethod: internal
 authInternalUsers:
+  - user: any
+    pass: ""
+    permissions:
+      - action: api
   - user: publisher
-    pass: ${PUBLISH_SECRET}
+    pass: $PUBLISH_SECRET
     permissions:
       - action: publish
         path: ""
   - user: internal
-    pass: ${INTERNAL_SECRET}
+    pass: $INTERNAL_SECRET
     permissions:
       - action: read
         path: ""
@@ -31,7 +35,7 @@ authInternalUsers:
 
 paths:
   all_others:
-    record: yes
+    record: true
     recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S
     recordFormat: fmp4
     recordPartDuration: 1s
