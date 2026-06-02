@@ -2,3 +2,4 @@
 *.tar.gz
 *.tar
 k8s/secrets/secrets.yaml
+.claude/
