@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediamtx-read
+  namespace: superstreaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mediamtx-read
+  template:
+    metadata:
+      labels:
+        app: mediamtx-read
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mediamtx
+          image: bluenviron/mediamtx:latest
+          args: ["/mediamtx.yml"]
+          ports:
+            - name: webrtc-http
+              containerPort: 8889
+              protocol: TCP
+            - name: webrtc-udp
+              containerPort: 8189
+              protocol: UDP
+            - name: webrtc-tcp
+              containerPort: 8189
+              protocol: TCP
+            - name: api
+              containerPort: 9997
+              protocol: TCP
+            - name: metrics
+              containerPort: 9998
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: superstreaming-secrets
+          volumeMounts:
+            - name: config
+              mountPath: /mediamtx.yml
+              subPath: mediamtx.yml
+          readinessProbe:
+            httpGet:
+              path: /v3/config/global/get
+              port: 9997
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v3/config/global/get
+              port: 9997
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+      volumes:
+        - name: config
+          configMap:
+            name: mediamtx-read-config
