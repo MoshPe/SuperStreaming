@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS recordings (
+  id          BIGSERIAL PRIMARY KEY,
+  stream_id   TEXT NOT NULL,
+  start_time  TIMESTAMPTZ NOT NULL,
+  end_time    TIMESTAMPTZ NOT NULL,
+  minio_path  TEXT NOT NULL,
+  duration_s  INTEGER NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS recordings_stream_time_idx ON recordings (stream_id, start_time);
