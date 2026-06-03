@@ -17,8 +17,9 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: mediamtx
-          image: bluenviron/mediamtx:latest
-          args: ["/mediamtx.yml"]
+          image: superstreaming/mediamtx:local
+          imagePullPolicy: IfNotPresent
+          args: ["/tmp/mediamtx.yml"]
           ports:
             - name: rtsp
               containerPort: 8554
@@ -64,7 +65,7 @@ spec:
     - metadata:
         name: recordings
       spec:
-        accessModes: ["ReadWriteOncePod"]
+        accessModes: ["ReadWriteOnce"]
         storageClassName: local-path
         resources:
           requests:

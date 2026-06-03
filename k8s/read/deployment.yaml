@@ -16,8 +16,9 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: mediamtx
-          image: bluenviron/mediamtx:latest
-          args: ["/mediamtx.yml"]
+          image: superstreaming/mediamtx:local
+          imagePullPolicy: IfNotPresent
+          args: ["/tmp/mediamtx.yml"]
           ports:
             - name: webrtc-http
               containerPort: 8889
