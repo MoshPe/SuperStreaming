@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mediamtx-read-config
+  namespace: superstreaming
+data:
+  mediamtx.yml: |
+    logLevel: info
+    logDestinations:
+      - stdout
+
+    api: yes
+    apiAddress: :9997
+
+    metrics: yes
+    metricsAddress: :9998
+
+    rtsp: no
+
+    webrtc: yes
+    webrtcAddress: :8889
+    webrtcLocalUDPAddress: :8189
+    webrtcLocalTCPAddress: :8189
+    webrtcAdditionalHosts:
+      - ${WEBRTC_EXTERNAL_HOST}
+
+    authMethod: internal
+    authInternalUsers:
+      - user: viewer
+        pass: ${VIEWER_SECRET}
+        permissions:
+          - action: read
+            path: ""
+
+    paths:
+      "~^(.+)$":
+        source: rtsp://internal:${INTERNAL_SECRET}@mediamtx-origin-0.mediamtx-origin-headless.superstreaming.svc.cluster.local:8554/$G1
+        sourceOnDemand: no

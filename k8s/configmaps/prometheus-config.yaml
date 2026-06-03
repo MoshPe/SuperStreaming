@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: superstreaming
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+
+    scrape_configs:
+      - job_name: mediamtx-origin
+        static_configs:
+          - targets:
+              - mediamtx-origin-0.mediamtx-origin-headless:9998
+        metrics_path: /metrics
+
+      - job_name: mediamtx-read
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - superstreaming
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: mediamtx-read
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: "${1}:9998"

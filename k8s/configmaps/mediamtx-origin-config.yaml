@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mediamtx-origin-config
+  namespace: superstreaming
+data:
+  mediamtx.yml: |
+    logLevel: info
+    logDestinations:
+      - stdout
+
+    api: yes
+    apiAddress: :9997
+
+    metrics: yes
+    metricsAddress: :9998
+
+    rtsp: yes
+    rtspAddress: :8554
+    rtspEncryption: no
+
+    webrtc: no
+
+    authMethod: internal
+    authInternalUsers:
+      - user: publisher
+        pass: ${PUBLISH_SECRET}
+        permissions:
+          - action: publish
+            path: ""
+      - user: internal
+        pass: ${INTERNAL_SECRET}
+        permissions:
+          - action: read
+            path: ""
+          - action: playback
+            path: ""
+
+    paths:
+      all_others:
+        record: yes
+        recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S
+        recordFormat: fmp4
+        recordPartDuration: 1s
+        recordSegmentDuration: 60s
+        recordDeleteAfter: 2h
