@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -41,11 +42,14 @@ func Connect(dsn string) (*DB, error) {
 func (d *DB) Close() { d.pool.Close() }
 
 // InsertRecording inserts one segment row into the recordings table.
-func (d *DB) InsertRecording(r Recording) error {
-	_, err := d.pool.Exec(`
+func (d *DB) InsertRecording(ctx context.Context, r Recording) error {
+	_, err := d.pool.ExecContext(ctx, `
 		INSERT INTO recordings (stream_id, start_time, end_time, minio_path, duration_s)
 		VALUES ($1, $2, $3, $4, $5)`,
 		r.StreamID, r.StartTime, r.EndTime, r.MinioPath, r.DurationS,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("insert recording (stream_id=%s): %w", r.StreamID, err)
+	}
+	return nil
 }
