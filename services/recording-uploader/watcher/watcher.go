@@ -80,6 +80,10 @@ func (w *Watcher) Run(ctx context.Context) {
 					}
 				}
 			}
+			// Remove watches for deleted directories to prevent fd leak.
+			if event.Has(fsnotify.Remove) {
+				w.fsw.Remove(event.Name) // no-op if not watched, safe to call
+			}
 			// Debounce .mp4 write/create events.
 			if filepath.Ext(event.Name) == ".mp4" &&
 				(event.Has(fsnotify.Write) || event.Has(fsnotify.Create)) {
@@ -109,6 +113,10 @@ func (w *Watcher) Run(ctx context.Context) {
 
 // handleStable calls uploadFn only if the file size is unchanged over 200ms.
 func (w *Watcher) handleStable(ctx context.Context, path string) {
+	// Don't upload if context was cancelled (graceful shutdown).
+	if ctx.Err() != nil {
+		return
+	}
 	info1, err := os.Stat(path)
 	if err != nil {
 		return
