@@ -57,6 +57,29 @@ spec:
             limits:
               cpu: "2"
               memory: "2Gi"
+        - name: recording-uploader
+          image: superstreaming/recording-uploader:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RECORDINGS_DIR
+              value: /recordings
+            - name: MINIO_ENDPOINT
+              value: minio.superstreaming.svc.cluster.local:9000
+            - name: POSTGRES_HOST
+              value: postgres.superstreaming.svc.cluster.local
+          envFrom:
+            - secretRef:
+                name: superstreaming-secrets
+          volumeMounts:
+            - name: recordings
+              mountPath: /recordings
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
       volumes:
         - name: config
           configMap:
