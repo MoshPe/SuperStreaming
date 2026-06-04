@@ -1,12 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"superstreaming/recording-uploader/db"
+	"superstreaming/recording-uploader/uploader"
+	"superstreaming/recording-uploader/watcher"
 )
 
 type config struct {
@@ -30,8 +37,10 @@ func (c config) postgresDSN() string {
 		c.postgresUser, c.postgresPassword, c.postgresHost, c.postgresPort, c.postgresDB)
 }
 
-func loadConfig() config {
-	return config{
+func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+
+	cfg := config{
 		recordingsDir:    getEnv("RECORDINGS_DIR", "/recordings"),
 		minioEndpoint:    mustEnv("MINIO_ENDPOINT"),
 		minioUser:        mustEnv("MINIO_ROOT_USER"),
@@ -46,11 +55,42 @@ func loadConfig() config {
 		orphanAgeSecs:    getEnvInt("ORPHAN_AGE_SECONDS", 90),
 		segmentDuration:  getEnvInt("SEGMENT_DURATION_S", 60),
 	}
-}
 
-func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	log.Info().Msg("recording-uploader starting (skeleton)")
+	dbPool, err := db.Connect(cfg.postgresDSN())
+	if err != nil {
+		log.Fatal().Err(err).Msg("connect to postgres")
+	}
+	defer dbPool.Close()
+
+	up, err := uploader.New(uploader.Config{
+		MinioEndpoint:   cfg.minioEndpoint,
+		MinioUser:       cfg.minioUser,
+		MinioPassword:   cfg.minioPassword,
+		MinioBucket:     cfg.minioBucket,
+		MinioUseSSL:     cfg.minioUseSSL,
+		SegmentDuration: cfg.segmentDuration,
+		DB:              dbPool,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("create uploader")
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+
+	log.Info().Str("dir", cfg.recordingsDir).Msg("scanning orphaned segments")
+	if err := up.ScanOrphans(ctx, cfg.recordingsDir, cfg.orphanAgeSecs); err != nil {
+		log.Warn().Err(err).Msg("orphan scan partial error")
+	}
+
+	w, err := watcher.New(cfg.recordingsDir, up.Upload)
+	if err != nil {
+		log.Fatal().Err(err).Msg("create watcher")
+	}
+
+	log.Info().Str("dir", cfg.recordingsDir).Msg("watching for segments")
+	w.Run(ctx)
+	log.Info().Msg("shutdown complete")
 }
 
 func getEnv(key, fallback string) string {
