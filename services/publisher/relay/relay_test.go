@@ -54,6 +54,26 @@ func TestBuildArgsTestPattern(t *testing.T) {
 	}
 }
 
+func TestBuildArgsTestPatternUsesShortKeyframeInterval(t *testing.T) {
+	args := relay.BuildArgs("test", "rtsp://publisher:secret@origin-0:8554/test-stream")
+
+	gopIdx := indexOf(args, "-g")
+	if gopIdx < 0 || gopIdx+1 >= len(args) {
+		t.Fatal("test pattern should set GOP size with -g")
+	}
+	if args[gopIdx+1] != "30" {
+		t.Fatalf("test pattern GOP should be 30 frames for fast live joins, got %q", args[gopIdx+1])
+	}
+
+	keyintIdx := indexOf(args, "-keyint_min")
+	if keyintIdx < 0 || keyintIdx+1 >= len(args) {
+		t.Fatal("test pattern should set minimum keyframe interval with -keyint_min")
+	}
+	if args[keyintIdx+1] != "30" {
+		t.Fatalf("test pattern keyint_min should be 30 frames, got %q", args[keyintIdx+1])
+	}
+}
+
 func TestBuildArgsNoTimestampOverwrite(t *testing.T) {
 	args := relay.BuildArgs("rtsp://cam/stream", "rtsp://publisher:secret@origin-0:8554/cam-01")
 	// -y overwrites output without asking; not wanted for RTSP streaming

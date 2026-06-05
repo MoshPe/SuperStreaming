@@ -4,3 +4,6 @@
 k8s/secrets/secrets.yaml
 .claude/
 *.exe
+superstreaming
+.idea
+Credentials.txt
