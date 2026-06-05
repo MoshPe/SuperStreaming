@@ -22,6 +22,7 @@ func New(endpoint, user, password, bucket string, useSSL bool, expiry time.Durat
 	mc, err := miniogo.New(endpoint, &miniogo.Options{
 		Creds:  credentials.NewStaticV4(user, password, ""),
 		Secure: useSSL,
+		Region: "us-east-1", // explicit region keeps presign fully offline (no GetBucketLocation lookup)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("minio client: %w", err)

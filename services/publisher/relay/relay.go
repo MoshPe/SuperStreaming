@@ -20,7 +20,7 @@ func BuildArgs(source, target string) []string {
 			"-f", "lavfi", "-i", "testsrc=size=1280x720:rate=30",
 			"-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-			"-profile:v", "baseline", "-b:v", "1000k",
+			"-profile:v", "baseline", "-pix_fmt", "yuv420p", "-b:v", "1000k",
 			"-c:a", "libopus", "-b:a", "64k",
 			"-f", "rtsp", target,
 		}

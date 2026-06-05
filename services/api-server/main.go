@@ -19,23 +19,24 @@ import (
 )
 
 type config struct {
-	listenAddr         string
-	originCount        int
-	originHostTemplate string
-	originAPIPort      int
-	originPollInterval time.Duration
-	minioEndpoint      string
-	minioUser          string
-	minioPassword      string
-	minioBucket        string
-	minioUseSSL        bool
-	minioPresignExpiry time.Duration
-	postgresHost       string
-	postgresPort       string
-	postgresUser       string
-	postgresPassword   string
-	postgresDB         string
-	corsOrigin         string
+	listenAddr          string
+	originCount         int
+	originHostTemplate  string
+	originAPIPort       int
+	originPollInterval  time.Duration
+	minioEndpoint       string
+	minioPublicEndpoint string
+	minioUser           string
+	minioPassword       string
+	minioBucket         string
+	minioUseSSL         bool
+	minioPresignExpiry  time.Duration
+	postgresHost        string
+	postgresPort        string
+	postgresUser        string
+	postgresPassword    string
+	postgresDB          string
+	corsOrigin          string
 }
 
 func (c config) postgresDSN() string {
@@ -53,23 +54,24 @@ func (c config) originAddrs() []string {
 
 func loadConfig() config {
 	return config{
-		listenAddr:         getEnv("LISTEN_ADDR", ":8080"),
-		originCount:        getEnvInt("ORIGIN_COUNT", 3),
-		originHostTemplate: getEnv("ORIGIN_HOST_TEMPLATE", "mediamtx-origin-%d"),
-		originAPIPort:      getEnvInt("ORIGIN_API_PORT", 9997),
-		originPollInterval: getEnvDuration("ORIGIN_POLL_INTERVAL", 3*time.Second),
-		minioEndpoint:      mustEnv("MINIO_ENDPOINT"),
-		minioUser:          mustEnv("MINIO_ROOT_USER"),
-		minioPassword:      mustEnv("MINIO_ROOT_PASSWORD"),
-		minioBucket:        mustEnv("MINIO_BUCKET"),
-		minioUseSSL:        getEnvBool("MINIO_USE_SSL", false),
-		minioPresignExpiry: getEnvDuration("MINIO_PRESIGN_EXPIRY", 24*time.Hour),
-		postgresHost:       getEnv("POSTGRES_HOST", "postgres"),
-		postgresPort:       getEnv("POSTGRES_PORT", "5432"),
-		postgresUser:       mustEnv("POSTGRES_USER"),
-		postgresPassword:   mustEnv("POSTGRES_PASSWORD"),
-		postgresDB:         mustEnv("POSTGRES_DB"),
-		corsOrigin:         getEnv("CORS_ORIGIN", "*"),
+		listenAddr:          getEnv("LISTEN_ADDR", ":8080"),
+		originCount:         getEnvInt("ORIGIN_COUNT", 3),
+		originHostTemplate:  getEnv("ORIGIN_HOST_TEMPLATE", "mediamtx-origin-%d"),
+		originAPIPort:       getEnvInt("ORIGIN_API_PORT", 9997),
+		originPollInterval:  getEnvDuration("ORIGIN_POLL_INTERVAL", 3*time.Second),
+		minioEndpoint:       mustEnv("MINIO_ENDPOINT"),
+		minioPublicEndpoint: getEnv("MINIO_PUBLIC_ENDPOINT", os.Getenv("MINIO_ENDPOINT")),
+		minioUser:           mustEnv("MINIO_ROOT_USER"),
+		minioPassword:       mustEnv("MINIO_ROOT_PASSWORD"),
+		minioBucket:         mustEnv("MINIO_BUCKET"),
+		minioUseSSL:         getEnvBool("MINIO_USE_SSL", false),
+		minioPresignExpiry:  getEnvDuration("MINIO_PRESIGN_EXPIRY", 24*time.Hour),
+		postgresHost:        getEnv("POSTGRES_HOST", "postgres"),
+		postgresPort:        getEnv("POSTGRES_PORT", "5432"),
+		postgresUser:        mustEnv("POSTGRES_USER"),
+		postgresPassword:    mustEnv("POSTGRES_PASSWORD"),
+		postgresDB:          mustEnv("POSTGRES_DB"),
+		corsOrigin:          getEnv("CORS_ORIGIN", "*"),
 	}
 }
 
@@ -86,7 +88,7 @@ func main() {
 	log.Info().Str("host", cfg.postgresHost).Msg("postgres connected")
 
 	presigner, err := miniopresign.New(
-		cfg.minioEndpoint,
+		cfg.minioPublicEndpoint,
 		cfg.minioUser,
 		cfg.minioPassword,
 		cfg.minioBucket,
@@ -96,7 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("minio client init failed")
 	}
-	log.Info().Str("endpoint", cfg.minioEndpoint).Msg("minio client ready")
+	log.Info().Str("endpoint", cfg.minioPublicEndpoint).Msg("minio presign client ready")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handlers.Health)
