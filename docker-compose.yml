@@ -200,15 +200,25 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Web Frontend (stub — replaced in Sub-Project 5) ───────────────
+  # ── Web Frontend ───────────────────────────────────────────────────
   web-frontend:
-    image: nginx:alpine
+    image: superstreaming/web-frontend:latest
+    build:
+      context: .
+      dockerfile: build/web-frontend/Dockerfile
     container_name: web-frontend
     restart: unless-stopped
     networks:
       - superstreaming
     ports:
       - "80:80"
+    environment:
+      - MEDIAMTX_WHEP_BASE=http://localhost:8889/
+      - API_SERVER_URL=http://localhost:8080
+      - VIEWER_PASSWORD=${VIEWER_SECRET}
+    depends_on:
+      api-server:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/"]
       interval: 10s
