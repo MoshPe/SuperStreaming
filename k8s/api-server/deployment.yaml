@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: superstreaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+    spec:
+      containers:
+        - name: api-server
+          image: superstreaming/api-server:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LISTEN_ADDR
+              value: ":8080"
+            - name: ORIGIN_COUNT
+              value: "3"
+            - name: ORIGIN_HOST_TEMPLATE
+              value: "mediamtx-origin-%d.mediamtx-origin-headless.superstreaming.svc.cluster.local"
+            - name: ORIGIN_API_PORT
+              value: "9997"
+            - name: MINIO_ENDPOINT
+              value: "minio.superstreaming.svc.cluster.local:9000"
+            - name: MINIO_BUCKET
+              value: "recordings"
+            - name: POSTGRES_HOST
+              value: "postgres.superstreaming.svc.cluster.local"
+            - name: CORS_ORIGIN
+              value: "*"
+          envFrom:
+            - secretRef:
+                name: superstreaming-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

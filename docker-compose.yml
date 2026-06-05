@@ -163,20 +163,42 @@ services:
       retries: 5
       start_period: 10s
 
-  # ── API Server (stub — replaced in Sub-Project 4) ─────────────────
+  # ── API Server ─────────────────────────────────────────────────────
   api-server:
-    image: nginx:alpine
+    image: superstreaming/api-server:latest
+    build:
+      context: .
+      dockerfile: build/api-server/Dockerfile
     container_name: api-server
     restart: unless-stopped
     networks:
       - superstreaming
     ports:
-      - "8080:80"
+      - "8080:8080"
+    environment:
+      - LISTEN_ADDR=:8080
+      - ORIGIN_COUNT=1
+      - ORIGIN_HOST_TEMPLATE=mediamtx-origin-%d
+      - ORIGIN_API_PORT=9997
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - CORS_ORIGIN=*
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
   # ── Web Frontend (stub — replaced in Sub-Project 5) ───────────────
   web-frontend:
