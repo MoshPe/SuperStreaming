@@ -225,6 +225,26 @@ services:
       timeout: 5s
       retries: 3
 
+  # ── Publisher ─────────────────────────────────────────────────────
+  publisher:
+    image: superstreaming/publisher:latest
+    build:
+      context: .
+      dockerfile: build/publisher/Dockerfile
+    container_name: publisher
+    restart: unless-stopped
+    networks:
+      - superstreaming
+    environment:
+      - ORIGIN_COUNT=1
+      - ORIGIN_HOST_TEMPLATE=mediamtx-origin-%d
+      - ORIGIN_RTSP_PORT=8554
+      - PUBLISH_SECRET=${PUBLISH_SECRET}
+      - STREAMS=${PUBLISHER_STREAMS:-cam-01=test}
+    depends_on:
+      mediamtx-origin-0:
+        condition: service_healthy
+
   # ── Prometheus ─────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: publisher
+  namespace: superstreaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: publisher
+  template:
+    metadata:
+      labels:
+        app: publisher
+    spec:
+      containers:
+        - name: publisher
+          image: superstreaming/publisher:latest
+          env:
+            - name: ORIGIN_COUNT
+              value: "3"
+            - name: ORIGIN_HOST_TEMPLATE
+              value: "mediamtx-origin-%d.mediamtx-origin-headless.superstreaming.svc.cluster.local"
+            - name: ORIGIN_RTSP_PORT
+              value: "8554"
+            - name: STREAMS
+              value: "cam-01=test,cam-02=test,cam-03=test"
+          envFrom:
+            - secretRef:
+                name: superstreaming-secrets
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "128Mi"
+            limits:
+              cpu: "2000m"
+              memory: "512Mi"
