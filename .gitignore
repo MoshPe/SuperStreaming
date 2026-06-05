@@ -6,4 +6,3 @@ k8s/secrets/secrets.yaml
 *.exe
 superstreaming
 .idea
-Credentials.txt
