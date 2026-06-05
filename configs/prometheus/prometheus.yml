@@ -3,14 +3,32 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: mediamtx-origin
+  # MediaMTX origin pods — scraped individually for per-origin panels
+  - job_name: mediamtx-origin-0
     static_configs:
-      - targets:
-          - mediamtx-origin-0:9998
+      - targets: ["mediamtx-origin-0:9998"]
+        labels:
+          pod: mediamtx-origin-0
     metrics_path: /metrics
 
+  - job_name: mediamtx-origin-1
+    static_configs:
+      - targets: ["mediamtx-origin-1:9998"]
+        labels:
+          pod: mediamtx-origin-1
+    metrics_path: /metrics
+
+  - job_name: mediamtx-origin-2
+    static_configs:
+      - targets: ["mediamtx-origin-2:9998"]
+        labels:
+          pod: mediamtx-origin-2
+    metrics_path: /metrics
+
+  # MediaMTX read replicas
   - job_name: mediamtx-read
     static_configs:
-      - targets:
-          - mediamtx-read:9998
+      - targets: ["mediamtx-read:9998"]
+        labels:
+          pod: mediamtx-read
     metrics_path: /metrics

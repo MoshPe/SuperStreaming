@@ -7,14 +7,32 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
+      evaluation_interval: 15s
 
     scrape_configs:
-      - job_name: mediamtx-origin
+      # Origin pods via headless service DNS — scraped individually for per-origin panels
+      - job_name: mediamtx-origin-0
         static_configs:
-          - targets:
-              - mediamtx-origin-0.mediamtx-origin-headless:9998
+          - targets: ["mediamtx-origin-0.mediamtx-origin-headless.superstreaming.svc.cluster.local:9998"]
+            labels:
+              pod: mediamtx-origin-0
         metrics_path: /metrics
 
+      - job_name: mediamtx-origin-1
+        static_configs:
+          - targets: ["mediamtx-origin-1.mediamtx-origin-headless.superstreaming.svc.cluster.local:9998"]
+            labels:
+              pod: mediamtx-origin-1
+        metrics_path: /metrics
+
+      - job_name: mediamtx-origin-2
+        static_configs:
+          - targets: ["mediamtx-origin-2.mediamtx-origin-headless.superstreaming.svc.cluster.local:9998"]
+            labels:
+              pod: mediamtx-origin-2
+        metrics_path: /metrics
+
+      # Read replicas via pod discovery
       - job_name: mediamtx-read
         kubernetes_sd_configs:
           - role: pod
@@ -28,3 +46,5 @@ data:
           - source_labels: [__meta_kubernetes_pod_ip]
             target_label: __address__
             replacement: "${1}:9998"
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
