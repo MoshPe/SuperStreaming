@@ -14,9 +14,9 @@ func TestOriginIndex(t *testing.T) {
 	}{
 		// Hardcode expected values — computed once, locked in as regression tests.
 		// To compute: h := fnv.New32a(); h.Write([]byte(id)); return int(h.Sum32()) % n
-		{"cam-01", 3, int(hash.FNV32a("cam-01") % 3)},
-		{"cam-02", 3, int(hash.FNV32a("cam-02") % 3)},
-		{"cam-10", 3, int(hash.FNV32a("cam-10") % 3)},
+		{"cam-01", 3, int(hash.FNV32a("cam-01")) % 3},
+		{"cam-02", 3, int(hash.FNV32a("cam-02")) % 3},
+		{"cam-10", 3, int(hash.FNV32a("cam-10")) % 3},
 		{"cam-01", 1, 0},
 	}
 	for _, tc := range tests {
