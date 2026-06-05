@@ -87,6 +87,10 @@ func (d *DB) QueryRecordings(p QueryParams) ([]Recording, int, error) {
 		recs = append(recs, r)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("rows: %w", err)
+	}
+
 	const cq = `
 		SELECT count(*)
 		FROM recordings
