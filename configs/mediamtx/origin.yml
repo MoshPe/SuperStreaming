@@ -20,6 +20,7 @@ authInternalUsers:
     pass: ""
     permissions:
       - action: api
+      - action: metrics
   - user: publisher
     pass: $PUBLISH_SECRET
     permissions:

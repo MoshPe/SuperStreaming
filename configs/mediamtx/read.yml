@@ -23,6 +23,7 @@ authInternalUsers:
     pass: ""
     permissions:
       - action: api
+      - action: metrics
   - user: viewer
     pass: $VIEWER_SECRET
     permissions:
