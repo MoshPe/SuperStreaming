@@ -28,8 +28,7 @@ type config struct {
 	postgresUser     string
 	postgresPassword string
 	postgresDB       string
-	orphanAgeSecs    int
-	segmentDuration  int
+	orphanAgeSecs int
 }
 
 func (c config) postgresDSN() string {
@@ -52,8 +51,7 @@ func main() {
 		postgresUser:     mustEnv("POSTGRES_USER"),
 		postgresPassword: mustEnv("POSTGRES_PASSWORD"),
 		postgresDB:       mustEnv("POSTGRES_DB"),
-		orphanAgeSecs:    getEnvInt("ORPHAN_AGE_SECONDS", 90),
-		segmentDuration:  getEnvInt("SEGMENT_DURATION_S", 60),
+		orphanAgeSecs: getEnvInt("ORPHAN_AGE_SECONDS", 90),
 	}
 
 	dbPool, err := db.Connect(cfg.postgresDSN())
@@ -63,13 +61,12 @@ func main() {
 	defer dbPool.Close()
 
 	up, err := uploader.New(uploader.Config{
-		MinioEndpoint:   cfg.minioEndpoint,
-		MinioUser:       cfg.minioUser,
-		MinioPassword:   cfg.minioPassword,
-		MinioBucket:     cfg.minioBucket,
-		MinioUseSSL:     cfg.minioUseSSL,
-		SegmentDuration: cfg.segmentDuration,
-		DB:              dbPool,
+		MinioEndpoint: cfg.minioEndpoint,
+		MinioUser:     cfg.minioUser,
+		MinioPassword: cfg.minioPassword,
+		MinioBucket:   cfg.minioBucket,
+		MinioUseSSL:   cfg.minioUseSSL,
+		DB:            dbPool,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("create uploader")

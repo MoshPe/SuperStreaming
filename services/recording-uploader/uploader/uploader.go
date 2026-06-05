@@ -27,21 +27,19 @@ type MinioClient interface {
 
 // Uploader uploads completed fMP4 segments to MinIO and records them in Postgres.
 type Uploader struct {
-	minio           MinioClient
-	db              DBWriter
-	bucket          string
-	segmentDuration int
+	minio  MinioClient
+	db     DBWriter
+	bucket string
 }
 
 // Config holds resolved dependencies for New.
 type Config struct {
-	MinioEndpoint   string
-	MinioUser       string
-	MinioPassword   string
-	MinioBucket     string
-	MinioUseSSL     bool
-	SegmentDuration int
-	DB              DBWriter
+	MinioEndpoint string
+	MinioUser     string
+	MinioPassword string
+	MinioBucket   string
+	MinioUseSSL   bool
+	DB            DBWriter
 }
 
 // New creates an Uploader with a real MinIO client.
@@ -54,10 +52,9 @@ func New(cfg Config) (*Uploader, error) {
 		return nil, fmt.Errorf("minio client: %w", err)
 	}
 	return &Uploader{
-		minio:           &minioAdapter{mc},
-		db:              cfg.DB,
-		bucket:          cfg.MinioBucket,
-		segmentDuration: cfg.SegmentDuration,
+		minio:  &minioAdapter{mc},
+		db:     cfg.DB,
+		bucket: cfg.MinioBucket,
 	}, nil
 }
 
@@ -81,17 +78,26 @@ func (u *Uploader) Upload(ctx context.Context, filePath string) error {
 
 	objectName := fmt.Sprintf("recordings/%s/%s", streamID, filepath.Base(filePath))
 
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("stat file: %w", err)
+	}
+	endTime := info.ModTime().UTC()
+	durationS := int(endTime.Sub(startTime).Seconds())
+	if durationS < 1 {
+		durationS = 1
+	}
+
 	if err := u.minio.FPutObject(ctx, u.bucket, objectName, filePath); err != nil {
 		return fmt.Errorf("minio upload: %w", err)
 	}
 
-	endTime := startTime.Add(time.Duration(u.segmentDuration) * time.Second)
 	if err := u.db.InsertRecording(ctx, db.Recording{
 		StreamID:  streamID,
 		StartTime: startTime,
 		EndTime:   endTime,
 		MinioPath: objectName,
-		DurationS: u.segmentDuration,
+		DurationS: durationS,
 	}); err != nil {
 		return fmt.Errorf("db insert: %w", err)
 	}

@@ -84,19 +84,32 @@ func (w *Watcher) Run(ctx context.Context) {
 			if event.Has(fsnotify.Remove) {
 				w.fsw.Remove(event.Name) // no-op if not watched, safe to call
 			}
-			// Debounce .mp4 write/create events.
+			// Debounce .mp4 Write events. MediaMTX writes a 1s fMP4 part every
+			// ~1000ms for the duration of the segment (60s). The timer resets on
+			// every part write; it fires only after writes stop for 2s, meaning
+			// the segment is closed and complete.
 			if filepath.Ext(event.Name) == ".mp4" &&
 				(event.Has(fsnotify.Write) || event.Has(fsnotify.Create)) {
 				mu.Lock()
 				p := event.Name
 				if t, exists := pending[p]; exists {
-					t.Reset(500 * time.Millisecond)
+					t.Reset(2 * time.Second)
 				} else {
-					pending[p] = time.AfterFunc(500*time.Millisecond, func() {
+					pending[p] = time.AfterFunc(2*time.Second, func() {
 						mu.Lock()
 						delete(pending, p)
 						mu.Unlock()
-						w.handleStable(ctx, p)
+						if ctx.Err() != nil {
+							return
+						}
+						info, err := os.Stat(p)
+						if err != nil {
+							return
+						}
+						log.Info().Str("file", p).Int64("bytes", info.Size()).Msg("segment ready")
+						if err := w.uploadFn(ctx, p); err != nil {
+							log.Error().Str("file", p).Err(err).Msg("upload failed")
+						}
 					})
 				}
 				mu.Unlock()
@@ -108,26 +121,5 @@ func (w *Watcher) Run(ctx context.Context) {
 			}
 			log.Error().Err(err).Msg("watcher error")
 		}
-	}
-}
-
-// handleStable calls uploadFn only if the file size is unchanged over 200ms.
-func (w *Watcher) handleStable(ctx context.Context, path string) {
-	// Don't upload if context was cancelled (graceful shutdown).
-	if ctx.Err() != nil {
-		return
-	}
-	info1, err := os.Stat(path)
-	if err != nil {
-		return
-	}
-	time.Sleep(200 * time.Millisecond)
-	info2, err := os.Stat(path)
-	if err != nil || info1.Size() != info2.Size() {
-		return
-	}
-	log.Info().Str("file", path).Int64("bytes", info2.Size()).Msg("segment ready")
-	if err := w.uploadFn(ctx, path); err != nil {
-		log.Error().Str("file", path).Err(err).Msg("upload failed")
 	}
 }

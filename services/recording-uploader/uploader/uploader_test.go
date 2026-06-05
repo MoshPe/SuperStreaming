@@ -99,9 +99,16 @@ func TestUpload_HappyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Set mtime = startTime + 60s so DurationS is deterministic.
+	startTime := time.Date(2026, 6, 5, 10, 30, 0, 0, time.UTC)
+	endTime := startTime.Add(60 * time.Second)
+	if err := os.Chtimes(filePath, endTime, endTime); err != nil {
+		t.Fatal(err)
+	}
+
 	mc := &mockMinio{}
 	mdb := &mockDB{}
-	u := &Uploader{minio: mc, db: mdb, bucket: "recordings", segmentDuration: 60}
+	u := &Uploader{minio: mc, db: mdb, bucket: "recordings"}
 
 	if err := u.Upload(context.Background(), filePath); err != nil {
 		t.Fatalf("Upload: %v", err)
@@ -123,9 +130,8 @@ func TestUpload_HappyPath(t *testing.T) {
 	if r.DurationS != 60 {
 		t.Errorf("DurationS = %d, want 60", r.DurationS)
 	}
-	want := time.Date(2026, 6, 5, 10, 30, 0, 0, time.UTC)
-	if !r.StartTime.Equal(want) {
-		t.Errorf("StartTime = %v, want %v", r.StartTime, want)
+	if !r.StartTime.Equal(startTime) {
+		t.Errorf("StartTime = %v, want %v", r.StartTime, startTime)
 	}
 }
 
@@ -137,7 +143,7 @@ func TestUpload_MinioError_DoesNotDeleteFile(t *testing.T) {
 	os.WriteFile(filePath, []byte("fake"), 0644)
 
 	mc := &mockMinio{err: errors.New("upload failed")}
-	u := &Uploader{minio: mc, db: &mockDB{}, bucket: "recordings", segmentDuration: 60}
+	u := &Uploader{minio: mc, db: &mockDB{}, bucket: "recordings", }
 
 	if err := u.Upload(context.Background(), filePath); err == nil {
 		t.Error("expected error, got nil")
@@ -155,7 +161,7 @@ func TestUpload_DBError_DoesNotDeleteFile(t *testing.T) {
 	os.WriteFile(filePath, []byte("fake"), 0644)
 
 	mdb := &mockDB{err: errors.New("db down")}
-	u := &Uploader{minio: &mockMinio{}, db: mdb, bucket: "recordings", segmentDuration: 60}
+	u := &Uploader{minio: &mockMinio{}, db: mdb, bucket: "recordings", }
 
 	if err := u.Upload(context.Background(), filePath); err == nil {
 		t.Error("expected error, got nil")

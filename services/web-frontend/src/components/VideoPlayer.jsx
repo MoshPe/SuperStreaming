@@ -31,21 +31,28 @@ export default function VideoPlayer({ streamId }) {
     loadReaderJs(readerJsUrl())
       .then(() => {
         if (!videoRef.current) return
+        const video = videoRef.current
         const opts = {
           url: whepUrl(streamId),
-          videoElement: videoRef.current,
+          onTrack: (evt) => {
+            if (evt.streams && evt.streams[0]) {
+              video.srcObject = evt.streams[0]
+            } else {
+              video.srcObject = new MediaStream([evt.track])
+            }
+          },
         }
         if (VIEWER_PASSWORD) {
-          opts.credentials = { username: 'viewer', password: VIEWER_PASSWORD }
+          opts.user = 'viewer'
+          opts.pass = VIEWER_PASSWORD
         }
         const reader = new window.MediaMTXWebRTCReader(opts)
-        reader.start()
         readerRef.current = reader
       })
       .catch((err) => setError(err.message))
 
     return () => {
-      readerRef.current?.stop()
+      readerRef.current?.close()
       readerRef.current = null
     }
   }, [streamId])

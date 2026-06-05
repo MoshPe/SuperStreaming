@@ -241,7 +241,7 @@ services:
       - ORIGIN_HOST_TEMPLATE=mediamtx-origin-%d
       - ORIGIN_RTSP_PORT=8554
       - PUBLISH_SECRET=${PUBLISH_SECRET}
-      - STREAMS=${PUBLISHER_STREAMS:-cam-01=test}
+      - STREAMS=${PUBLISHER_STREAMS:-cam-01=test,cam-02=test,cam-03=test,cam-04=test,cam-05=test,cam-06=test,cam-07=test,cam-08=test,cam-09=test,cam-10=test}
     depends_on:
       mediamtx-origin-0:
         condition: service_healthy
