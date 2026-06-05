@@ -44,6 +44,7 @@ EXPECTED_IMAGES=(
     "superstreaming/recording-uploader:latest"
     "superstreaming/api-server:latest"
     "superstreaming/web-frontend:latest"
+    "superstreaming/publisher:latest"
 )
 
 MISSING=0
@@ -63,9 +64,8 @@ if [[ $MISSING -eq 0 ]]; then
     echo "  kubectl apply -f k8s/secrets/"
     echo "  kubectl apply -f k8s/configmaps/"
     echo "  kubectl apply -f k8s/postgres/ k8s/minio/ k8s/origin/ k8s/read/"
-    echo "  kubectl apply -f k8s/api-server/ k8s/web-frontend/"
+    echo "  kubectl apply -f k8s/api-server/ k8s/web-frontend/ k8s/publisher/"
     echo "  kubectl apply -f k8s/prometheus/ k8s/grafana/"
-    echo "  kubectl apply -f k8s/recording-uploader/ 2>/dev/null || true"
 else
     echo "WARNING: $MISSING image(s) may not have imported correctly."
     echo "Run 'sudo k3s ctr images ls' to inspect."

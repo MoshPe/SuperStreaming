@@ -35,6 +35,7 @@ $images = @(
     "superstreaming/recording-uploader:latest",
     "superstreaming/api-server:latest",
     "superstreaming/web-frontend:latest",
+    "superstreaming/publisher:latest",
     "postgres:16-alpine",
     "minio/minio:latest",
     "prom/prometheus:latest",
