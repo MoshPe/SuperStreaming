@@ -24,6 +24,7 @@ services:
       - superstreaming
     ports:
       - "8554:8554"        # RTSP publish
+      - "8890:8890/udp"    # SRT ingest (WAN camera relay)
       - "9997:9997"        # Control API (origin)
     volumes:
       - ./configs/mediamtx/origin.yml:/mediamtx.yml:ro
@@ -37,6 +38,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
+  # ── Coturn STUN/TURN ──────────────────────────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    restart: unless-stopped
+    networks:
+      - superstreaming
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49152-49201:49152-49201/udp"    # relay port range
+    environment:
+      - COTURN_EXTERNAL_IP=${COTURN_EXTERNAL_IP:-127.0.0.1}
+      - TURN_SECRET=${TURN_SECRET}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      exec turnserver -n --log-file=stdout
+      --external-ip=$$COTURN_EXTERNAL_IP
+      --min-port=49152 --max-port=49201
+      --use-auth-secret --static-auth-secret=$$TURN_SECRET
+      --realm=superstreaming --no-dtls --no-tls
 
   # ── MediaMTX Read Replica ─────────────────────────────────────────
   mediamtx-read:
@@ -59,9 +82,13 @@ services:
       - INTERNAL_SECRET=${INTERNAL_SECRET}
       - VIEWER_SECRET=${VIEWER_SECRET}
       - WEBRTC_EXTERNAL_HOST=${WEBRTC_EXTERNAL_HOST}
+      - COTURN_EXTERNAL_IP=${COTURN_EXTERNAL_IP:-127.0.0.1}
+      - TURN_SECRET=${TURN_SECRET}
     depends_on:
       mediamtx-origin-0:
         condition: service_healthy
+      coturn:
+        condition: service_started
     healthcheck:
       test: ["CMD", "/mediamtx", "--version"]
       interval: 10s
@@ -240,7 +267,10 @@ services:
       - ORIGIN_COUNT=1
       - ORIGIN_HOST_TEMPLATE=mediamtx-origin-%d
       - ORIGIN_RTSP_PORT=8554
+      - ORIGIN_SRT_PORT=8890
       - PUBLISH_SECRET=${PUBLISH_SECRET}
+      - SRT_LATENCY_MS=${SRT_LATENCY_MS:-200}
+      - SRT_PASSPHRASE=${SRT_PASSPHRASE:-}
       - STREAMS=${PUBLISHER_STREAMS:-cam-01=test,cam-02=test,cam-03=test,cam-04=test,cam-05=test,cam-06=test,cam-07=test,cam-08=test,cam-09=test,cam-10=test}
     depends_on:
       mediamtx-origin-0:
