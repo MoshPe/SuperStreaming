@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -90,7 +91,7 @@ func (c config) targetURL(s streamSpec) string {
 		u := fmt.Sprintf("srt://%s:%d?streamid=%s&latency=%d",
 			host, c.originSRTPort, streamid, c.srtLatencyMS*1000)
 		if c.srtPassphrase != "" {
-			u += "&passphrase=" + c.srtPassphrase
+			u += "&passphrase=" + url.QueryEscape(c.srtPassphrase)
 		}
 		return u
 	}
