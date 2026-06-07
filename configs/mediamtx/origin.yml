@@ -12,6 +12,9 @@ rtsp: true
 rtspAddress: :8554
 rtspEncryption: "no"
 
+srt: true
+srtAddress: :8890
+
 webrtc: false
 
 authMethod: internal
