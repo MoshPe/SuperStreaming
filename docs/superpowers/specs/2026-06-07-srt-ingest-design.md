@@ -73,24 +73,24 @@ No new MediaMTX auth users needed — existing `publisher` user with `PUBLISH_SE
 
 ## ffmpeg Argument Changes
 
-MPEG-TS is the container for SRT transport. MPEG-TS does not support Opus audio; audio must be AAC.
+All relay paths use `-an` (no audio). Surveillance use case — audio not needed. This also eliminates the Opus→AAC transcoding concern for MPEG-TS.
 
 | Source | Target | Video | Audio | Container |
 |--------|--------|-------|-------|-----------|
-| `test` | `rtsp://` | libx264 | libopus | rtsp *(unchanged)* |
-| `rtsp://` | `rtsp://` | copy | copy | rtsp *(unchanged)* |
-| `test` | `srt://` | libx264 | **aac** | **mpegts** |
-| `rtsp://` | `srt://` | copy | **aac -b:a 128k** | **mpegts** |
+| `test` | `rtsp://` | libx264 | **-an** | rtsp *(updated)* |
+| `rtsp://` | `rtsp://` | copy | **-an** | rtsp *(updated)* |
+| `test` | `srt://` | libx264 | **-an** | **mpegts** |
+| `rtsp://` | `srt://` | copy | **-an** | **mpegts** |
 
 Detection: `strings.HasPrefix(target, "srt://")` in `BuildArgs`.
 
-Audio transcoding for `rtsp://` → `srt://` is necessary to ensure MPEG-TS compatibility regardless of source codec. CPU cost is negligible.
+Test pattern source: remove sine audio input (`-f lavfi -i sine=...`) — single video-only lavfi input.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `services/publisher/relay/relay.go` | Detect SRT target; switch to mpegts + aac |
+| `services/publisher/relay/relay.go` | Detect SRT target; switch to mpegts; strip audio (`-an`) from all paths |
 | `services/publisher/relay/relay_test.go` | Add SRT target test cases |
 | `services/publisher/main.go` | Parse `@srt` suffix; add SRT config fields; generate SRT target URL |
 | `configs/mediamtx/origin.yml` | Enable `srt: true` on `:8890` |
@@ -129,7 +129,7 @@ STREAMS=cam-id=rtsp://camera-local-ip/stream@srt
 ORIGIN_HOST_TEMPLATE=<AG-origin-hostname-or-IP>
 ORIGIN_SRT_PORT=8890
 SRT_LATENCY_MS=<4x RTT in ms>
-SRT_PASSPHRASE=<shared secret for AES-256>
+SRT_PASSPHRASE=<shared secret for AES encryption>
 PUBLISH_SECRET=<same as origin>
 ```
 
