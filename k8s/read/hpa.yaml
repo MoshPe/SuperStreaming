@@ -1,14 +1,54 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: mediamtx-read
+  name: mediamtx-read-0
   namespace: superstreaming
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: mediamtx-read
-  minReplicas: 1
+    name: mediamtx-read-0
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mediamtx-read-1
+  namespace: superstreaming
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mediamtx-read-1
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mediamtx-read-2
+  namespace: superstreaming
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mediamtx-read-2
+  minReplicas: 2
   maxReplicas: 6
   metrics:
     - type: Resource

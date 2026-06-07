@@ -2,20 +2,31 @@ const w = (typeof window !== 'undefined' && window.__ENV__) || {}
 
 function get(windowKey, viteKey, fallback) {
   const v = w[windowKey] || import.meta.env[viteKey] || fallback
-  // envsubst leaves placeholder unchanged if var unset; treat as fallback
   return v.startsWith('${') ? fallback : v
 }
 
-export const MEDIAMTX_WHEP_BASE = get('MEDIAMTX_WHEP_BASE', 'VITE_MEDIAMTX_WHEP_BASE', 'http://localhost:8889/')
+// READ_BASE_URLS: comma-separated WHEP base URLs indexed by origin_index.
+// e.g. "http://node:30889/,http://node:30890/,http://node:30891/"
+// Falls back to single MEDIAMTX_WHEP_BASE for local dev / single-origin.
+const _readBasesRaw = get('READ_BASE_URLS', 'VITE_READ_BASE_URLS', '')
+const _whepFallback = get('MEDIAMTX_WHEP_BASE', 'VITE_MEDIAMTX_WHEP_BASE', 'http://localhost:8889/')
+
+export const READ_BASE_URLS = _readBasesRaw
+  ? _readBasesRaw.split(',').map(u => u.trim()).filter(Boolean)
+  : [_whepFallback]
+
 export const API_SERVER_URL = get('API_SERVER_URL', 'VITE_API_SERVER_URL', 'http://localhost:8080')
 export const VIEWER_PASSWORD = get('VIEWER_PASSWORD', 'VITE_VIEWER_PASSWORD', '')
 
-export function whepUrl(streamId) {
-  const base = MEDIAMTX_WHEP_BASE.endsWith('/') ? MEDIAMTX_WHEP_BASE : MEDIAMTX_WHEP_BASE + '/'
-  return `${base}${streamId}/whep`
+function baseForOrigin(originIndex) {
+  const b = READ_BASE_URLS[originIndex] ?? READ_BASE_URLS[0] ?? 'http://localhost:8889/'
+  return b.endsWith('/') ? b : b + '/'
+}
+
+export function whepUrl(streamName, originIndex = 0) {
+  return `${baseForOrigin(originIndex)}${streamName}/whep`
 }
 
 export function readerJsUrl() {
-  const base = MEDIAMTX_WHEP_BASE.endsWith('/') ? MEDIAMTX_WHEP_BASE : MEDIAMTX_WHEP_BASE + '/'
-  return `${base}webrtc/js/reader.js`
+  return `${baseForOrigin(0)}webrtc/js/reader.js`
 }

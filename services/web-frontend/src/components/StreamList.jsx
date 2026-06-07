@@ -22,13 +22,13 @@ export default function StreamList({ streams, connected, activeStream, onSelect 
             No active streams
           </li>
         )}
-        {streams.map((name) => (
-          <li key={name}>
+        {streams.map((stream) => (
+          <li key={stream.name}>
             <button
-              onClick={() => onSelect(name)}
+              onClick={() => onSelect(stream)}
               className={[
                 'w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors duration-100 cursor-pointer',
-                activeStream === name
+                activeStream?.name === stream.name
                   ? 'bg-elevated text-white'
                   : 'text-slate-300 hover:bg-elevated/50 hover:text-white',
               ].join(' ')}
@@ -38,7 +38,7 @@ export default function StreamList({ streams, connected, activeStream, onSelect 
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
               </span>
-              <span className="truncate font-mono text-xs">{name}</span>
+              <span className="truncate font-mono text-xs">{stream.name}</span>
             </button>
           </li>
         ))}

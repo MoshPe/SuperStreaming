@@ -21,7 +21,7 @@ export default function LiveViewer() {
 
       {/* Video pane */}
       <div className="flex-1 min-w-0 bg-black">
-        <VideoPlayer streamId={activeStream} />
+        <VideoPlayer stream={activeStream} />
       </div>
     </div>
   )

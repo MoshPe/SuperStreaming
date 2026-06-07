@@ -14,6 +14,7 @@ export function useSSE() {
       es.addEventListener('streams', (e) => {
         try {
           const data = JSON.parse(e.data)
+          // active is []StreamInfo: [{name, origin_index}, ...]
           setStreams(data.active ?? [])
           setConnected(true)
         } catch {
@@ -28,7 +29,6 @@ export function useSSE() {
       es.onerror = () => {
         setConnected(false)
         es.close()
-        // SSE auto-reconnects, but we close and reconnect manually for control
         esRef.current = null
         setTimeout(connect, 3000)
       }

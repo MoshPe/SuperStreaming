@@ -5,7 +5,7 @@ metadata:
   namespace: superstreaming
 spec:
   serviceName: mediamtx-origin-headless
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: mediamtx-origin
@@ -67,6 +67,8 @@ spec:
               value: minio.superstreaming.svc.cluster.local:9000
             - name: POSTGRES_HOST
               value: postgres.superstreaming.svc.cluster.local
+            - name: POSTGRES_PORT
+              value: "5432"
           envFrom:
             - secretRef:
                 name: superstreaming-secrets
@@ -89,7 +91,7 @@ spec:
         name: recordings
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: local-path
+        storageClassName: standard
         resources:
           requests:
             storage: 20Gi
