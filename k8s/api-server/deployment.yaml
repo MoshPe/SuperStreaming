@@ -33,6 +33,8 @@ spec:
               value: "recordings"
             - name: POSTGRES_HOST
               value: "postgres.superstreaming.svc.cluster.local"
+            - name: POSTGRES_PORT
+              value: "5432"
             - name: CORS_ORIGIN
               value: "*"
           envFrom:

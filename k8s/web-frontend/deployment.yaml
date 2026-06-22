@@ -19,10 +19,10 @@ spec:
           ports:
             - containerPort: 80
           env:
-            - name: MEDIAMTX_WHEP_BASE
-              value: "http://NODE_IP:8889/"
+            - name: READ_BASE_URLS
+              value: "http://NODE_IP/whep/0/,http://NODE_IP/whep/1/,http://NODE_IP/whep/2/"
             - name: API_SERVER_URL
-              value: "http://api-server.superstreaming.svc.cluster.local:8080"
+              value: "http://NODE_IP/api"
             - name: VIEWER_PASSWORD
               valueFrom:
                 secretKeyRef:

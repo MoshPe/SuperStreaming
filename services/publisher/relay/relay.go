@@ -3,6 +3,7 @@ package relay
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -11,27 +12,35 @@ import (
 const restartDelay = 3 * time.Second
 
 // BuildArgs returns the ffmpeg argument slice for relaying source to target.
-// source = "test" produces a synthetic H264+Opus test pattern.
+// source = "test" produces a synthetic H264-only test pattern.
 // Any other source is treated as an RTSP URL and copied without re-encoding.
+// Audio is always disabled (-an). If target starts with "srt://", the output
+// container is mpegts; otherwise rtsp.
 func BuildArgs(source, target string) []string {
+	isSRT := strings.HasPrefix(target, "srt://")
+	outFormat := "rtsp"
+	if isSRT {
+		outFormat = "mpegts"
+	}
+
 	if source == "test" {
 		return []string{
 			"-re",
 			"-f", "lavfi", "-i", "testsrc=size=1280x720:rate=30",
-			"-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
 			"-profile:v", "baseline", "-pix_fmt", "yuv420p", "-b:v", "1000k",
 			"-g", "30", "-keyint_min", "30", "-sc_threshold", "0",
-			"-c:a", "libopus", "-b:a", "64k",
-			"-f", "rtsp", target,
+			"-an",
+			"-f", outFormat, target,
 		}
 	}
 	return []string{
 		"-re",
 		"-rtsp_transport", "tcp",
 		"-i", source,
-		"-c", "copy",
-		"-f", "rtsp", target,
+		"-c:v", "copy",
+		"-an",
+		"-f", outFormat, target,
 	}
 }
 

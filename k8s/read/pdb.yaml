@@ -1,10 +1,35 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: mediamtx-read
+  name: mediamtx-read-0
   namespace: superstreaming
 spec:
   minAvailable: 1
   selector:
     matchLabels:
       app: mediamtx-read
+      origin-index: "0"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mediamtx-read-1
+  namespace: superstreaming
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: mediamtx-read
+      origin-index: "1"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mediamtx-read-2
+  namespace: superstreaming
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: mediamtx-read
+      origin-index: "2"

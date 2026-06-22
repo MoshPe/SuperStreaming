@@ -38,5 +38,5 @@ data:
 
     paths:
       "~^(.+)$":
-        source: rtsp://internal:$INTERNAL_SECRET@mediamtx-origin-0.mediamtx-origin-headless.superstreaming.svc.cluster.local:8554/$G1
+        source: rtsp://internal:$INTERNAL_SECRET@$ORIGIN_HOST:8554/$G1
         sourceOnDemand: true

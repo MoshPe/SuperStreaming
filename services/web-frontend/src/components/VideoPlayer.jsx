@@ -3,37 +3,38 @@ import { whepUrl, readerJsUrl, VIEWER_PASSWORD } from '../env.js'
 
 let readerJsPromise = null
 
-function loadReaderJs(src) {
+function loadReaderJs() {
   if (readerJsPromise) return readerJsPromise
   readerJsPromise = new Promise((resolve, reject) => {
     if (window.MediaMTXWebRTCReader) { resolve(); return }
     const script = document.createElement('script')
-    script.src = src
+    script.src = readerJsUrl()
     script.onload = resolve
     script.onerror = () => {
       readerJsPromise = null
-      reject(new Error('Failed to load reader.js from ' + src))
+      reject(new Error('Failed to load reader.js'))
     }
     document.head.appendChild(script)
   })
   return readerJsPromise
 }
 
-export default function VideoPlayer({ streamId }) {
+// stream: { name: string, origin_index: number } | null
+export default function VideoPlayer({ stream }) {
   const videoRef = useRef(null)
   const readerRef = useRef(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!streamId) return
+    if (!stream) return
     setError(null)
 
-    loadReaderJs(readerJsUrl())
+    loadReaderJs()
       .then(() => {
         if (!videoRef.current) return
         const video = videoRef.current
         const opts = {
-          url: whepUrl(streamId),
+          url: whepUrl(stream.name, stream.origin_index),
           onTrack: (evt) => {
             if (evt.streams && evt.streams[0]) {
               video.srcObject = evt.streams[0]
@@ -55,9 +56,9 @@ export default function VideoPlayer({ streamId }) {
       readerRef.current?.close()
       readerRef.current = null
     }
-  }, [streamId])
+  }, [stream])
 
-  if (!streamId) {
+  if (!stream) {
     return (
       <div className="flex items-center justify-center h-full text-slate-500 text-sm">
         Select stream from sidebar
@@ -82,11 +83,10 @@ export default function VideoPlayer({ streamId }) {
           </div>
         </div>
       )}
-      {/* Stream label */}
       <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 rounded px-2 py-1">
         <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
         <span className="text-xs font-mono text-slate-300">LIVE</span>
-        <span className="text-xs font-mono text-slate-400">{streamId}</span>
+        <span className="text-xs font-mono text-slate-400">{stream.name}</span>
       </div>
     </div>
   )

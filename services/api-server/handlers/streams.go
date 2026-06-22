@@ -27,10 +27,16 @@ func NewStreamsHandler(origins []string, interval time.Duration) *StreamsHandler
 	return &StreamsHandler{origins: origins, interval: interval}
 }
 
+// StreamInfo carries a stream name and which origin index hosts it.
+type StreamInfo struct {
+	Name        string `json:"name"`
+	OriginIndex int    `json:"origin_index"`
+}
+
 type streamsEvent struct {
-	Active  []string `json:"active"`
-	Added   []string `json:"added"`
-	Removed []string `json:"removed"`
+	Active  []StreamInfo `json:"active"`
+	Added   []StreamInfo `json:"added"`
+	Removed []StreamInfo `json:"removed"`
 }
 
 func (h *StreamsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +58,7 @@ func (h *StreamsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer ticker.Stop()
 	defer heartbeat.Stop()
 
-	var prev []string
+	var prev []StreamInfo
 
 	sendEvent := func(name string, payload any) {
 		data, _ := json.Marshal(payload)
@@ -83,11 +89,11 @@ func (h *StreamsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// pollAll queries all origins and returns the merged set of ready stream names.
-func (h *StreamsHandler) pollAll(ctx context.Context) []string {
-	seen := make(map[string]struct{})
-	for _, addr := range h.origins {
-		// Parse "host:port" using url.Host so IPv4/IPv6 and hostnames all work.
+// pollAll queries all origins and returns the merged set of ready streams with their origin index.
+// Streams are hash-routed so each name should appear on exactly one origin; first-seen wins on conflict.
+func (h *StreamsHandler) pollAll(ctx context.Context) []StreamInfo {
+	seen := make(map[string]StreamInfo)
+	for i, addr := range h.origins {
 		u, err := url.Parse("dummy://" + addr)
 		if err != nil || u.Hostname() == "" || u.Port() == "" {
 			log.Warn().Str("addr", addr).Msg("bad origin addr format")
@@ -105,32 +111,34 @@ func (h *StreamsHandler) pollAll(ctx context.Context) []string {
 			continue
 		}
 		for _, n := range names {
-			seen[n] = struct{}{}
+			if _, exists := seen[n]; !exists {
+				seen[n] = StreamInfo{Name: n, OriginIndex: i}
+			}
 		}
 	}
-	result := make([]string, 0, len(seen))
-	for n := range seen {
-		result = append(result, n)
+	result := make([]StreamInfo, 0, len(seen))
+	for _, s := range seen {
+		result = append(result, s)
 	}
-	sort.Strings(result)
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
 	return result
 }
 
-// diff returns elements added to and removed from prev to get current.
-func diff(prev, current []string) (added, removed []string) {
-	prevSet := make(map[string]struct{}, len(prev))
+// diff returns streams added to and removed from prev to reach current, keyed by name.
+func diff(prev, current []StreamInfo) (added, removed []StreamInfo) {
+	prevMap := make(map[string]struct{}, len(prev))
 	for _, s := range prev {
-		prevSet[s] = struct{}{}
+		prevMap[s.Name] = struct{}{}
 	}
-	currSet := make(map[string]struct{}, len(current))
+	currMap := make(map[string]struct{}, len(current))
 	for _, s := range current {
-		currSet[s] = struct{}{}
-		if _, ok := prevSet[s]; !ok {
+		currMap[s.Name] = struct{}{}
+		if _, ok := prevMap[s.Name]; !ok {
 			added = append(added, s)
 		}
 	}
 	for _, s := range prev {
-		if _, ok := currSet[s]; !ok {
+		if _, ok := currMap[s.Name]; !ok {
 			removed = append(removed, s)
 		}
 	}
